@@ -1,0 +1,18 @@
+# Cloudflare Pages response headers (https://developers.cloudflare.com/pages/configuration/headers/)
+# Vite copies this file into dist/.
+
+# The page itself: always check for a new version, so updates show up straight away.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Built JS/CSS have a content hash in their names (index-DiGxrVd4.js), so a new build means a
+# new URL. Browsers can keep these for a year without asking again.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Models and the icon keep the same name between builds: use the cached copy for a day, and
+# refresh it in the background for a week after that.
+/models/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/favicon.svg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

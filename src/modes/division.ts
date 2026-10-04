@@ -1,5 +1,5 @@
 // ➗ Division: share marbles fairly between trucks. Open crates when the ones run out;
-// whatever can't be shared fairly goes in the bin — that's the remainder.
+// whatever can't be shared fairly goes in the leftover tray: that's the remainder.
 import type { Factory } from "../factory";
 import { hud } from "../hud";
 import { wait } from "../fx";

@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0e1426" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Hesabu Lab</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="description" content="A 3D physics math game for carrying, borrowing, groups and sharing with remainders." />
@@ -18,14 +21,17 @@
         <button id="menu" hidden aria-label="Back to menu">☰</button>
         <div id="stars" aria-label="stars"></div>
       </div>
-      <div id="side">
-        <div id="sum" aria-live="polite"></div>
-        <div id="keypad" hidden></div>
-      </div>
       <div id="message" role="status"></div>
-      <div id="controls">
-        <div id="hopper"></div>
-        <div id="actions"></div>
+      <!-- On phones the dock is a bar along the bottom: sum, then keypad or action buttons. -->
+      <div id="dock">
+        <div id="side">
+          <div id="sum" aria-live="polite"></div>
+          <div id="keypad" hidden></div>
+        </div>
+        <div id="controls">
+          <div id="hopper"></div>
+          <div id="actions"></div>
+        </div>
       </div>
     </div>
 
@@ -40,6 +46,7 @@
           <button class="mode div" data-mode="div"><b>÷</b><span>Share</span></button>
         </div>
         <small id="loading">Loading…</small>
+        <a class="source" href="https://github.com/felixmakinda/hesabu-lab" target="_blank" rel="noopener">Free &amp; open source · View the code</a>
       </div>
     </div>
 

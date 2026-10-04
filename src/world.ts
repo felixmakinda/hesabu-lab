@@ -86,6 +86,20 @@ export function binSlot(k: number): THREE.Vector3 {
 }
 const BIN = { W: 0.9, D: 0.45, floor: 0.06, H: 0.9 };
 
+/** Screen space (CSS px from each edge) that the HUD covers on phones; see hud.sceneInsets. */
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+/**
+ * The part of the world that must stay in view on small screens: trucks and shelf on the
+ * left, the tube and its numbers on the right, count labels below and the pipe lid on top.
+ */
+const CONTENT = { x0: -5.1, x1: 3.2, y0: -0.6, y1: 4.9 };
+
 export interface World {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
@@ -101,7 +115,8 @@ export interface World {
   makeLabel: (className: string, at: THREE.Vector3) => { el: HTMLElement; obj: CSS2DObject };
   showProps: (props: { rack: boolean; rail: boolean }) => void;
   update: (dt: number) => void;
-  resize: () => void;
+  /** Pass the HUD insets when they may have changed; with none, the last ones are reused. */
+  resize: (insets?: Insets | null) => void;
   render: (shake: THREE.Vector3) => void;
 }
 
@@ -129,7 +144,8 @@ export async function createWorld(container: HTMLElement): Promise<World> {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(COLORS.bg);
-  scene.fog = new THREE.Fog(COLORS.bg, 14, 30);
+  const fog = new THREE.Fog(COLORS.bg, 14, 30);
+  scene.fog = fog;
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -308,41 +324,76 @@ export async function createWorld(container: HTMLElement): Promise<World> {
   showProps({ rack: false, rail: false });
 
   // ---------- Quality guard ----------
-  // If the laptop can't keep up at the higher resolution, drop back to native.
+  // If the device can't keep up, lower the resolution: first to native on laptops, then in
+  // steps down to 1× on phones (whose screens are 2-3×). Checked every 3 s, at most twice.
   let frames = 0;
   let elapsed = 0;
-  let checked = false;
+  let checks = 0;
   const update = (dt: number) => {
     updateGears(dt);
-    if (checked) return;
+    if (checks >= 2) return;
     frames++;
     elapsed += dt;
-    if (elapsed >= 3) {
-      checked = true;
-      if (frames / elapsed < 40 && pixelRatio > dpr) {
-        pixelRatio = dpr;
-        renderer.setPixelRatio(pixelRatio);
-        composer.setPixelRatio(pixelRatio);
-        resize();
-      }
+    if (elapsed < 3) return;
+    const fps = frames / elapsed;
+    frames = elapsed = 0;
+    checks++;
+    if (fps >= 40 || pixelRatio <= 1) {
+      checks = 2;
+      return;
     }
+    pixelRatio = Math.max(1, Math.min(dpr, pixelRatio * 0.7));
+    renderer.setPixelRatio(pixelRatio);
+    composer.setPixelRatio(pixelRatio);
+    resize();
   };
 
   // ---------- Resize & render ----------
-  const resize = () => {
+  let insets: Insets | null = null;
+  const resize = (next?: Insets | null) => {
+    if (next !== undefined) insets = next;
     const w = container.clientWidth;
     const h = container.clientHeight;
     const aspect = w / h;
     camera.aspect = aspect;
-    // Pull the camera back on narrow screens so both shelf and tube fit.
-    const dist = aspect < 1.4 ? 11.5 + (1.4 - aspect) * 9 : 11.5;
-    camera.position.set(lookAt.x, lookAt.y + 1.3, dist);
-    camera.lookAt(lookAt);
+    if (insets) {
+      frameContent(w, h, insets);
+    } else {
+      // Desktop: pull the camera back on narrow screens so both shelf and tube fit.
+      const dist = aspect < 1.4 ? 11.5 + (1.4 - aspect) * 9 : 11.5;
+      camera.position.set(lookAt.x, lookAt.y + 1.3, dist);
+      camera.lookAt(lookAt);
+      camera.clearViewOffset();
+    }
+    // Fog starts just behind the scene, wherever the camera is (14-30 at the desktop distance).
+    const camDist = camera.position.distanceTo(lookAt);
+    fog.near = camDist + 2.5;
+    fog.far = camDist + 18.5;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
     composer.setSize(w, h);
     labelRenderer.setSize(w, h);
   };
+  // Phones: fit CONTENT into the part of the screen the HUD leaves free. The camera distance
+  // sets the zoom, and a view offset slides the picture so it's centred in that free area.
+  const frameContent = (w: number, h: number, i: Insets) => {
+    const freeW = Math.max(w - i.left - i.right, 1);
+    const freeH = Math.max(h - i.top - i.bottom, 1);
+    const margin = 1.06;
+    const pxPerUnit = Math.min(
+      freeW / ((CONTENT.x1 - CONTENT.x0) * margin),
+      freeH / ((CONTENT.y1 - CONTENT.y0) * margin),
+    );
+    const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
+    const dist = Math.max(h / 2 / (pxPerUnit * Math.tan(halfFov)), 9);
+    const centre = new THREE.Vector3((CONTENT.x0 + CONTENT.x1) / 2, (CONTENT.y0 + CONTENT.y1) / 2, 0);
+    camera.position.set(centre.x, centre.y + dist * 0.113, dist); // same slight downward tilt as desktop
+    camera.lookAt(centre);
+    const freeCx = i.left + freeW / 2;
+    const freeCy = i.top + freeH / 2;
+    camera.setViewOffset(w, h, w / 2 - freeCx, h / 2 - freeCy, w, h);
+  };
+
   resize();
 
   const render = (shake: THREE.Vector3) => {

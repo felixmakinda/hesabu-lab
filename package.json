@@ -9,9 +9,11 @@
     "deploy": "vite build && wrangler pages deploy dist --project-name hesabu-lab --branch main"
   },
   "packageManager": "pnpm@10.24.0",
-  "engines": { "node": ">=22" },
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
+  "author": "Felix Makinda",
+  "license": "AGPL-3.0-or-later",
   "description": "A 3D physics math game for practising carrying, borrowing and remainders",
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
@@ -24,5 +26,10 @@
     "vitest": "^5.0.3",
     "wrangler": "^4.147.0"
   },
-  "type": "module"
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felixmakinda/hesabu-lab.git"
+  },
+  "homepage": "https://github.com/felixmakinda/hesabu-lab"
 }

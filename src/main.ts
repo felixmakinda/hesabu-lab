@@ -48,7 +48,11 @@ async function main() {
     world.update(dt);
     world.render(shake.offset);
   });
-  window.addEventListener("resize", world.resize);
+  // Phone layouts reserve parts of the screen for the HUD; the camera frames the scene around them.
+  const fit = () => world.resize(hud.sceneInsets());
+  fit();
+  window.addEventListener("resize", fit);
+  window.visualViewport?.addEventListener("resize", fit);
 
   // ---------- Rounds ----------
   let stars = 0;

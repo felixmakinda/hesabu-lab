@@ -1,6 +1,8 @@
 // On-screen interface: the written maths panel, messages, action buttons and keypad.
 // Colours match the world: orange = tens (crates), cyan = ones (marbles), pink = taken / left over.
 
+import type { Insets } from "./world";
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 const digits = (n: number) => ({ t: n >= 10 ? String(Math.floor(n / 10)) : "", o: String(n % 10) });
@@ -230,6 +232,17 @@ export const hud = {
   /** Row of little marbles above the buttons showing how many are left to drop/take. */
   setHopper(n: number, style: "ones" | "pink" = "ones") {
     $("hopper").innerHTML = Array.from({ length: n }, () => `<i class="${style}"></i>`).join("");
+  },
+
+  /**
+   * How much of each screen edge the HUD covers, read from the --scene-* CSS variables that
+   * the phone layouts set in style.css. Null on desktop, where the camera keeps its own framing.
+   */
+  sceneInsets(): Insets | null {
+    const css = getComputedStyle($("hud"));
+    const px = (side: string) => parseFloat(css.getPropertyValue(`--scene-${side}`)) || 0;
+    const insets = { top: px("top"), right: px("right"), bottom: px("bottom"), left: px("left") };
+    return Object.values(insets).some((v) => v > 0) ? insets : null;
   },
 
   showKeypad(show: boolean) {

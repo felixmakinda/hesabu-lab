@@ -15,6 +15,13 @@
 
 * { box-sizing: border-box; }
 
+/* Screen space the HUD covers on each edge. Phone layouts set these and the camera frames
+   the 3D scene in what's left (see hud.sceneInsets). Registered so they compute to px. */
+@property --scene-top { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --scene-right { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --scene-bottom { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --scene-left { syntax: "<length>"; inherits: false; initial-value: 0px; }
+
 html, body {
   margin: 0;
   height: 100%;
@@ -22,9 +29,12 @@ html, body {
   background: var(--bg);
   user-select: none;
   -webkit-user-select: none;
+  overscroll-behavior: none; /* no pull-to-refresh mid-game */
+  touch-action: manipulation; /* no double-tap zoom on the buttons */
+  -webkit-text-size-adjust: 100%;
 }
 
-#app { position: fixed; inset: 0; }
+#app { position: fixed; inset: 0; touch-action: none; }
 #app canvas { display: block; }
 .labels { position: absolute; inset: 0; pointer-events: none; }
 
@@ -51,9 +61,12 @@ html, body {
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; }
 #hud > * { pointer-events: auto; }
+/* Desktop: the dock is just a wrapper, its children are placed on their own. */
+#dock { display: contents; }
 
 #topbar {
-  position: absolute; top: 14px; left: 18px;
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top)); left: calc(18px + env(safe-area-inset-left));
   display: flex; align-items: center; gap: 14px;
 }
 #menu {
@@ -253,19 +266,144 @@ button {
 }
 .mode b { font-size: clamp(48px, 6vw, 72px); line-height: 1; color: var(--c); text-shadow: 0 0 20px var(--c); }
 .mode span { font-size: clamp(16px, 1.8vw, 22px); font-weight: 700; }
-.mode:hover:not(:disabled) { transform: translateY(-4px); }
+@media (hover: hover) { .mode:hover:not(:disabled) { transform: translateY(-4px); } }
 .mode:active:not(:disabled) { transform: translateY(4px); }
 .mode:disabled { opacity: 0.4; }
 .mode.sub { --c: var(--pink); --c-dark: #a3245d; }
 .mode.mul { --c: var(--tens); --c-dark: #b2541a; }
 .mode.div { --c: var(--good); --c-dark: #2f9e57; }
 #loading { display: block; margin-top: 18px; color: var(--muted); font-size: 16px; }
+#start .source { display: inline-block; margin-top: 10px; color: var(--muted); font-size: 14px; }
+#start .source:hover { color: var(--text); }
 
-/* Narrow screens: sum panel moves to the top-right and shrinks */
-@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+/* Small landscape windows on a computer: sum panel moves to the top-right and shrinks */
+@media (max-width: 760px) and (min-aspect-ratio: 1/1) and (min-height: 521px) {
   #side { top: 70px; transform: none; }
   #sum { font-size: 36px; min-width: 0; padding: 10px 16px; }
   .modes { grid-template-columns: repeat(2, minmax(0, 150px)); }
+}
+
+/* ---------- Upright phones and tablets ----------
+   Top: menu, stars and a full-width message. Bottom: the dock (sum, then keypad or buttons).
+   The camera fits the whole scene into the band in between. */
+@media (max-aspect-ratio: 1/1) {
+  #hud {
+    --gap: 12px;
+    --dock-h: clamp(200px, 34vh, 330px);
+    --scene-top: calc(118px + env(safe-area-inset-top));
+    --scene-bottom: calc(var(--dock-h) + 2 * var(--gap) + env(safe-area-inset-bottom));
+  }
+  #topbar { top: calc(10px + env(safe-area-inset-top)); left: calc(var(--gap) + env(safe-area-inset-left)); }
+  #menu { width: 46px; height: 46px; }
+  #stars { font-size: 24px; }
+
+  #message {
+    top: calc(66px + env(safe-area-inset-top));
+    left: var(--gap); right: var(--gap);
+    width: auto; max-width: none;
+    transform: translateY(-12px);
+    padding: 6px 16px; border-radius: 20px;
+    font-size: clamp(17px, 4.4vw, 26px); line-height: 1.25;
+  }
+  #message.show { transform: none; }
+
+  #dock {
+    position: absolute;
+    left: calc(var(--gap) + env(safe-area-inset-left));
+    right: calc(var(--gap) + env(safe-area-inset-right));
+    bottom: calc(var(--gap) + env(safe-area-inset-bottom));
+    height: var(--dock-h);
+    display: flex; align-items: stretch; justify-content: center; gap: 10px;
+  }
+  #side { display: contents; }
+  #sum {
+    flex: 0 1 auto; min-width: 0; max-width: 50%;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 10px 14px; border-radius: 20px;
+    font-size: min(9vw, calc(var(--dock-h) / 5.4));
+  }
+  #sum .row { justify-content: center; }
+  #sum .chips { max-width: 4.6em; gap: 4px; margin: 6px auto 2px; }
+  #sum .share-row { gap: 10px; }
+
+  #keypad {
+    flex: 1 1 0; max-width: 360px;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6px; padding: 8px; border-radius: 20px;
+  }
+  #keypad button { height: auto; min-width: 0; overflow: hidden; font-size: clamp(20px, 6vw, 36px); border-radius: 14px; }
+
+  #controls { position: static; transform: none; flex: 1 1 0; min-width: 0; justify-content: center; }
+  #controls:has(#actions:empty) { display: none; }
+  #hopper { flex-wrap: wrap; justify-content: center; }
+  #actions { flex-direction: column; flex-wrap: nowrap; width: 100%; max-width: 360px; gap: 10px; }
+  .action {
+    justify-content: center; text-align: center; line-height: 1.15;
+    padding: 12px 18px; font-size: clamp(18px, 5vw, 30px);
+  }
+
+  .world-label { font-size: clamp(13px, 3.4vw, 22px); padding: 1px 10px; }
+  .world-label.small { font-size: clamp(11px, 2.8vw, 16px); padding: 0 7px; }
+  .world-label.bin { font-size: clamp(12px, 3vw, 18px); padding: 0 8px; }
+  .world-label.truck { font-size: clamp(13px, 3.2vw, 20px); padding: 0 6px; }
+  .ring-num { font-size: clamp(10px, 1.6vw, 14px); }
+
+  #start h1 { font-size: clamp(48px, 15vw, 120px); }
+  .modes { grid-template-columns: repeat(2, minmax(0, 150px)); gap: 14px; }
+}
+
+/* ---------- Phones held sideways ----------
+   Like the desktop layout, with a slimmer right-hand column so the sum and keypad fit the height. */
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  #hud {
+    --side-w: clamp(170px, 27vw, 240px);
+    --scene-top: calc(50px + env(safe-area-inset-top));
+    --scene-right: calc(var(--side-w) + 20px + env(safe-area-inset-right));
+    --scene-bottom: calc(74px + env(safe-area-inset-bottom));
+    --scene-left: env(safe-area-inset-left);
+  }
+  #topbar { top: calc(8px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); gap: 10px; }
+  #menu { width: 42px; height: 42px; font-size: 22px; border-radius: 12px; }
+  #stars { font-size: 20px; }
+
+  #side {
+    top: 8px; bottom: 8px; right: calc(10px + env(safe-area-inset-right));
+    transform: none; width: var(--side-w);
+    justify-content: center; gap: 8px;
+  }
+  #sum { font-size: min(30px, 7.5vh); padding: 8px 14px; min-width: 0; border-radius: 18px; }
+  #sum .row { justify-content: center; }
+  #sum .chips { max-width: 5.5em; margin: 6px auto 2px; }
+  #keypad { gap: 6px; padding: 8px; border-radius: 18px; }
+  #keypad button {
+    height: clamp(34px, 10.5vh, 48px); min-width: 0;
+    font-size: clamp(20px, 6vh, 28px); border-radius: 12px;
+  }
+
+  /* Message and buttons centre over the scene, i.e. left of the column */
+  #message {
+    top: calc(8px + env(safe-area-inset-top));
+    left: calc((100% - var(--side-w) - 20px) / 2);
+    max-width: calc(100% - var(--side-w) - 140px);
+    padding: 5px 16px; font-size: clamp(15px, 4.4vh, 20px); line-height: 1.25;
+  }
+  #controls { left: calc((100% - var(--side-w) - 20px) / 2); bottom: calc(10px + env(safe-area-inset-bottom)); gap: 6px; }
+  #hopper { min-height: 14px; }
+  #hopper i { width: 14px; height: 14px; }
+  .action { padding: 8px 24px; font-size: clamp(18px, 5vh, 24px); }
+
+  .world-label { font-size: clamp(13px, 4vh, 20px); padding: 1px 10px; }
+  .world-label.small { font-size: clamp(11px, 3.2vh, 15px); padding: 0 7px; }
+  .world-label.bin { font-size: clamp(12px, 3.6vh, 17px); padding: 0 8px; }
+  .world-label.truck { font-size: clamp(13px, 3.8vh, 19px); padding: 0 6px; }
+  .ring-num { font-size: 10px; }
+
+  #start h1 { font-size: clamp(40px, 14vh, 80px); }
+  #start p { font-size: 18px; margin: 4px 0 14px; }
+  .modes { grid-template-columns: repeat(4, minmax(0, 130px)); gap: 12px; }
+  .mode { padding: 8px 6px 6px; border-radius: 20px; }
+  .mode b { font-size: 40px; }
+  #loading { margin-top: 10px; }
 }
 
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }

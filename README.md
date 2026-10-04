@@ -54,3 +54,15 @@ Add `?test` to the URL to allow large animation time steps (for slow headless pl
 
 `vite.config.ts` uses `base: "./"`, so `dist/` works from any path. Deploy it as its own
 Vercel project and embed with an `<iframe>`, or copy `dist/` into the portfolio's `public/`.
+
+## License
+
+Copyright © 2026 Felix Makinda.
+
+Hesabu Lab is free software: you can redistribute it and/or modify it under the terms of the
+**GNU Affero General Public License v3.0 or later** (see [`LICENSE`](LICENSE)). In short: you
+may use, study, change and share it, but if you run a modified version for others (including
+over the web) you must publish your changes under the same license.
+
+Third-party pieces keep their own licenses: Three.js (MIT), Rapier (Apache-2.0), and the
+Baloo 2 font (SIL Open Font License, loaded from Google Fonts).

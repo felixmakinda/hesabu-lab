@@ -6,6 +6,7 @@ mistake-specific hint), then the right answer, and saves screenshots along the w
 Usage (with the game served first, e.g. `pnpm build && pnpm preview --port 4173`):
     python3 scripts/playtest.py add
     python3 scripts/playtest.py div --url "http://localhost:5174/?test" --queue 0.4,0.41 --tag zero
+    python3 scripts/playtest.py add --device phone      # also phone-land, small-phone, tablet
 
 Modes: add, sub, mul, div.
 --queue feeds fixed "random" numbers to the problem generator so you get a specific
@@ -26,6 +27,14 @@ from playwright.sync_api import sync_playwright
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CHROMIUM = os.path.expanduser("~/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome")
+# Screen sizes in CSS pixels. Phones use a touch screen and a 2x pixel ratio.
+DEVICES = {
+    "desktop": dict(viewport={"width": 1280, "height": 720}),
+    "phone": dict(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, device_scale_factor=2),
+    "phone-land": dict(viewport={"width": 844, "height": 390}, is_mobile=True, has_touch=True, device_scale_factor=2),
+    "small-phone": dict(viewport={"width": 360, "height": 640}, is_mobile=True, has_touch=True, device_scale_factor=2),
+    "tablet": dict(viewport={"width": 820, "height": 1180}, is_mobile=True, has_touch=True, device_scale_factor=2),
+}
 
 parser = argparse.ArgumentParser()
 parser.add_argument("mode", choices=["add", "sub", "mul", "div"])
@@ -34,10 +43,11 @@ parser.add_argument("--queue", default="", help='fixed random numbers for the pr
 parser.add_argument("--tag", default=None, help="screenshot file prefix (defaults to the mode)")
 parser.add_argument("--out", default=os.path.join(HERE, "out"))
 parser.add_argument("--chromium", default=os.environ.get("CHROMIUM", DEFAULT_CHROMIUM))
+parser.add_argument("--device", default="desktop", choices=list(DEVICES), help="screen to emulate")
 args = parser.parse_args()
 
 mode = args.mode
-tag = args.tag or mode
+tag = args.tag or (mode if args.device == "desktop" else f"{mode}-{args.device}")
 os.makedirs(args.out, exist_ok=True)
 shot = lambda name: os.path.join(args.out, f"{tag}-{name}.png")  # noqa: E731
 GENERATOR_FILE = {"add": "addition.ts", "sub": "subtraction.ts", "mul": "multiplication.ts", "div": "division.ts"}[mode]
@@ -71,7 +81,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch(
         executable_path=args.chromium, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
     )
-    page = browser.new_page(viewport={"width": 1280, "height": 720})
+    page = browser.new_page(**DEVICES[args.device])
     page.on("console", lambda m: errors.append(f"{m.type}: {m.text}") if m.type in ("error", "warning") else None)
     page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     page.goto(args.url)
