@@ -55,6 +55,20 @@ jobs:
         with:
           name: dist
           path: dist
+      # Fail early with a clear message if the token can't reach the Pages project.
+      # (Locally, `pnpm run deploy` uses your `wrangler login` session instead of this token.)
+      - name: Check the Cloudflare token
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        run: |
+          code=$(curl -s -o response.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/hesabu-lab")
+          if [ "$code" != "200" ]; then
+            echo "::error::Cloudflare rejected CLOUDFLARE_API_TOKEN (HTTP $code). Create a token with Account > Cloudflare Pages > Edit for this account and save it with: gh secret set CLOUDFLARE_API_TOKEN"
+            jq -c '.errors' response.json || true
+            exit 1
+          fi
+          echo "Token OK: it can read the hesabu-lab Pages project."
       - uses: cloudflare/wrangler-action@v3
         if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         with:

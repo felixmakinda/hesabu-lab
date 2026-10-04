@@ -8,11 +8,13 @@ and a crate can be opened back into 10 marbles. Four modes, each with two levels
 | **+ Add** | carrying | Drop marbles; every full tube seals into a crate and the carried 1 appears |
 | **− Take away** | borrowing | Not enough ones? Open a crate into the ten-frame rack; the tens digit is crossed out |
 | **× Groups** | multiplication as equal groups | Add groups of marbles/crates; tens still seal as the total grows |
-| **÷ Share** | division with remainder | Deal marbles to trucks; open crates when ones run out; leftovers go in the bin |
+| **÷ Share** | division with remainder | Deal marbles to trucks; open crates when ones run out; leftovers go in the leftover tray |
 
 Wrong answers are checked for the classic mistake behind them (forgot the carry, subtracted
 the smaller digit from the larger, added instead of multiplying, swapped share and remainder)
 and get a hint aimed at that mistake.
+
+Play it at **https://hesabu-lab.pages.dev**. It works on computers, tablets and phones, upright or sideways.
 
 ## Run
 
@@ -26,12 +28,29 @@ pnpm build      # static site in dist/
 ## 3D models (Blender, no GUI needed)
 
 ```bash
-~/opt/blender-4.5.14-linux-x64/blender --background --python blender/crate.py
-~/opt/blender-4.5.14-linux-x64/blender --background --python blender/truck.py
+blender --background --python blender/crate.py
+blender --background --python blender/truck.py
 ```
 
 Each writes a model to `public/models/` and a preview render to `blender/previews/`.
 Shared helpers are in `blender/common.py`.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    player(["Player"]) <--> hud["hud.ts<br/>sum, messages, keypad"]
+    hud <--> modes["modes/*.ts<br/>one lesson script per mode"]
+    modes --> math["math/*.ts<br/>problems + mistake diagnosis"]
+    modes --> factory["factory.ts<br/>seal, open, take away, share"]
+    factory --> world["world.ts<br/>Three.js scene"]
+    factory --> physics["physics.ts<br/>Rapier marbles"]
+    factory --> juice["fx.ts + audio.ts"]
+    world --> player
+```
+
+More diagrams (project structure, build and deploy pipeline, module dependencies, a round of
+play, the frame loop and the phone layouts) are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Code map
 
@@ -50,10 +69,11 @@ Shared helpers are in `blender/common.py`.
 
 Add `?test` to the URL to allow large animation time steps (for slow headless play-testing).
 
-## Embedding in the portfolio
+## Deploy
 
-`vite.config.ts` uses `base: "./"`, so `dist/` works from any path. Deploy it as its own
-Vercel project and embed with an `<iframe>`, or copy `dist/` into the portfolio's `public/`.
+Every push and pull request is type-checked, tested and built by GitHub Actions
+(`.github/workflows/ci.yml`). Pushes to `main` that pass are deployed to Cloudflare Pages.
+`vite.config.ts` uses `base: "./"`, so `dist/` also works from any sub-path or inside an `<iframe>`.
 
 ## License
 
