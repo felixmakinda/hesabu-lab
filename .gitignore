@@ -1,0 +1,56 @@
+# Dependencies and build output
+node_modules
+dist
+.vite
+coverage
+*.tsbuildinfo
+
+# Secrets and local config: never commit these
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+secrets/
+credentials*.json
+service-account*.json
+
+# Cloudflare / Wrangler local state (may hold account info)
+.wrangler
+
+# Claude Code / AI agent notes: local only, never pushed
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+
+# Blender backups
+*.blend1
+*.blend2
+
+# Python
+__pycache__
+*.pyc
+.venv
+venv
+
+# Play-test screenshots and logs
+scripts/out
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor and OS clutter
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.swp

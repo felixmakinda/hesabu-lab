@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hesabu Lab</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="description" content="A 3D physics math game for carrying, borrowing, groups and sharing with remainders." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div id="hud">
+      <div id="topbar">
+        <button id="menu" hidden aria-label="Back to menu">☰</button>
+        <div id="stars" aria-label="stars"></div>
+      </div>
+      <div id="side">
+        <div id="sum" aria-live="polite"></div>
+        <div id="keypad" hidden></div>
+      </div>
+      <div id="message" role="status"></div>
+      <div id="controls">
+        <div id="hopper"></div>
+        <div id="actions"></div>
+      </div>
+    </div>
+
+    <div id="start">
+      <div class="card">
+        <h1>Hesabu <span>Lab</span></h1>
+        <p><b class="o">10 marbles</b> make <b class="t">1 crate</b>. What will you build?</p>
+        <div class="modes">
+          <button class="mode add" data-mode="add"><b>+</b><span>Add</span></button>
+          <button class="mode sub" data-mode="sub"><b>−</b><span>Take away</span></button>
+          <button class="mode mul" data-mode="mul"><b>×</b><span>Groups</span></button>
+          <button class="mode div" data-mode="div"><b>÷</b><span>Share</span></button>
+        </div>
+        <small id="loading">Loading…</small>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
